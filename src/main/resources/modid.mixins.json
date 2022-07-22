@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.sorenon.physicality.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "client.GameRendererMixin",
+    "client.LevelMixin"
+  ],
+  "client": [
+    "client.ClientLevelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
