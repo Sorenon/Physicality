@@ -115,45 +115,45 @@ pub fn step_physics_world(index: usize, delta_time: f32, env: JNIEnv) -> i32 {
         // let mut wanted_blocks = HashSet::new();
         let wanted_blocks = &mut physics_world.cache_set;
 
-        for (_, body) in physics_world.rigid_body_set.iter() {
-            if body.is_dynamic() && !body.is_sleeping() {
-                let mut aabb: Option<AABB> = None;
+        // for (_, body) in physics_world.rigid_body_set.iter() {
+        //     if body.is_dynamic() && !body.is_sleeping() {
+        //         let mut aabb: Option<AABB> = None;
 
-                for collider in body
-                    .colliders()
-                    .iter()
-                    .map(|handle| physics_world.collider_set.get(*handle).unwrap())
-                {
-                    let shape_aabb = collider.compute_aabb();
+        //         for collider in body
+        //             .colliders()
+        //             .iter()
+        //             .map(|handle| physics_world.collider_set.get(*handle).unwrap())
+        //         {
+        //             let shape_aabb = collider.compute_aabb();
 
-                    match aabb {
-                        Some(mut aabb) => aabb.merge(&shape_aabb),
-                        None => aabb = Some(shape_aabb),
-                    }
-                }
+        //             match aabb {
+        //                 Some(mut aabb) => aabb.merge(&shape_aabb),
+        //                 None => aabb = Some(shape_aabb),
+        //             }
+        //         }
 
-                if let Some(aabb) = aabb {
-                    let min_x = (aabb.mins.x - 0.01).floor() as i32;
-                    let min_y = (aabb.mins.y - 0.01).floor() as i32;
-                    let min_z = (aabb.mins.z - 0.01).floor() as i32;
+        //         if let Some(aabb) = aabb {
+        //             let min_x = (aabb.mins.x - 0.01).floor() as i32;
+        //             let min_y = (aabb.mins.y - 0.01).floor() as i32;
+        //             let min_z = (aabb.mins.z - 0.01).floor() as i32;
 
-                    let max_x = (aabb.maxs.x + 0.01).ceil() as i32;
-                    let max_y = (aabb.maxs.y + 0.01).ceil() as i32;
-                    let max_z = (aabb.maxs.z + 0.01).ceil() as i32;
+        //             let max_x = (aabb.maxs.x + 0.01).ceil() as i32;
+        //             let max_y = (aabb.maxs.y + 0.01).ceil() as i32;
+        //             let max_z = (aabb.maxs.z + 0.01).ceil() as i32;
 
-                    // for x in min_x..=max_x {
-                    //     for y in min_y..=max_y {
-                    //         for z in min_z..=max_z {
-                    //             let pos = Vector3::new(x, y, z);
-                    //             if !physics_world.blocks.contains_key(&pos) && !wanted_blocks.contains(&pos) {
-                    //                 wanted_blocks.insert(pos);
-                    //             }
-                    //         }
-                    //     }
-                    // }
-                }
-            }
-        }
+        //             // for x in min_x..=max_x {
+        //             //     for y in min_y..=max_y {
+        //             //         for z in min_z..=max_z {
+        //             //             let pos = Vector3::new(x, y, z);
+        //             //             if !physics_world.blocks.contains_key(&pos) && !wanted_blocks.contains(&pos) {
+        //             //                 wanted_blocks.insert(pos);
+        //             //             }
+        //             //         }
+        //             //     }
+        //             // }
+        //         }
+        //     }
+        // }
 
         let wanted_blocks = wanted_blocks.iter().copied().collect::<Vec<_>>();
 

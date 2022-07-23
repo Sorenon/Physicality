@@ -93,41 +93,41 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
 ) -> jint {
     match safe::get_render_transform(physics_world as usize - 1, std::mem::transmute(body)) {
         Ok((pos, orientation)) => {
-            env.set_field(position_out, "x", "F", jni::objects::JValue::Float(pos.x))
-                .unwrap();
-            env.set_field(position_out, "y", "F", jni::objects::JValue::Float(pos.y))
-                .unwrap();
-            env.set_field(position_out, "z", "F", jni::objects::JValue::Float(pos.z))
-                .unwrap();
+            // env.set_field(position_out, "x", "F", jni::objects::JValue::Float(pos.x))
+            //     .unwrap();
+            // env.set_field(position_out, "y", "F", jni::objects::JValue::Float(pos.y))
+            //     .unwrap();
+            // env.set_field(position_out, "z", "F", jni::objects::JValue::Float(pos.z))
+            //     .unwrap();
 
-            env.set_field(
-                orientation_out,
-                "x",
-                "F",
-                jni::objects::JValue::Float(orientation.i),
-            )
-            .unwrap();
-            env.set_field(
-                orientation_out,
-                "y",
-                "F",
-                jni::objects::JValue::Float(orientation.j),
-            )
-            .unwrap();
-            env.set_field(
-                orientation_out,
-                "z",
-                "F",
-                jni::objects::JValue::Float(orientation.k),
-            )
-            .unwrap();
-            env.set_field(
-                orientation_out,
-                "w",
-                "F",
-                jni::objects::JValue::Float(orientation.w),
-            )
-            .unwrap();
+            // env.set_field(
+            //     orientation_out,
+            //     "x",
+            //     "F",
+            //     jni::objects::JValue::Float(orientation.i),
+            // )
+            // .unwrap();
+            // env.set_field(
+            //     orientation_out,
+            //     "y",
+            //     "F",
+            //     jni::objects::JValue::Float(orientation.j),
+            // )
+            // .unwrap();
+            // env.set_field(
+            //     orientation_out,
+            //     "z",
+            //     "F",
+            //     jni::objects::JValue::Float(orientation.k),
+            // )
+            // .unwrap();
+            // env.set_field(
+            //     orientation_out,
+            //     "w",
+            //     "F",
+            //     jni::objects::JValue::Float(orientation.w),
+            // )
+            // .unwrap();
 
             0
         }
@@ -142,18 +142,18 @@ pub struct Callback {
 impl Callback {
     pub fn run_callback(&self, env: JNIEnv, wanted_blocks: &[Vector3<i32>]) {
         //This is safe??
-        let _res = env
-            .call_method(
-                &self.object,
-                "preStep",
-                "(JIJJ)V",
-                &[
-                    JValue::Long(wanted_blocks.as_ptr() as jlong),
-                    JValue::Int(wanted_blocks.len() as jint),
-                    JValue::Long(0i64),
-                    JValue::Long(0i64),
-                ],
-            )
-            .unwrap();
+        // let _res = env
+        //     .call_method(
+        //         &self.object,
+        //         "preStep",
+        //         "(JIJJ)V",
+        //         &[
+        //             JValue::Long(wanted_blocks.as_ptr() as jlong),
+        //             JValue::Int(wanted_blocks.len() as jint),
+        //             JValue::Long(0i64),
+        //             JValue::Long(0i64),
+        //         ],
+        //     )
+        //     .unwrap();
     }
 }
