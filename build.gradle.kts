@@ -48,12 +48,7 @@ dependencies {
 	//TODO use rayon
 	include(implementation("com.github.stephengold:Libbulletjme:15.2.1")!!)
 
-//	include(implementation("org.joml:joml:${properties["joml_version"].toString()}")!!)
-
-	implementation("de.fabmax:physx-jni:1.0.0")
-	runtimeOnly("de.fabmax:physx-jni:1.0.0:natives-windows")
-	runtimeOnly("de.fabmax:physx-jni:1.0.0:natives-linux")
-	runtimeOnly("de.fabmax:physx-jni:1.0.0:natives-macos")
+	include(implementation("org.joml:joml:${properties["joml_version"].toString()}")!!)
 
     modRuntimeOnly("maven.modrinth:lazydfu:0.1.3") {
 		exclude(module = "fabric-loader")
@@ -72,6 +67,7 @@ tasks {
 
 	withType<JavaCompile> {
 		options.release.set(17)
+		options.headerOutputDirectory.set(file("C:\\Users\\soren\\Documents\\Programming\\fabric-example-mod-1.19\\rust\\jni-headers"))
 	}
 
 	jar {

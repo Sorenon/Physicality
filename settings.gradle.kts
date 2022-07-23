@@ -9,9 +9,12 @@ pluginManagement {
             url = uri("https://server.bbkr.space/artifactory/libs-release/")
         }
         maven {
+            name = "Quilt"
             url = uri("https://maven.quiltmc.org/repository/release")
         }
         mavenCentral()
         gradlePluginPortal()
     }
 }
+
+include("rust")

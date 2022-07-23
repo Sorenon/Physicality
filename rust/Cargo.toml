@@ -1,0 +1,2 @@
+[workspace]
+members = [ "mc-phys", "mc-phys-jni" ]
