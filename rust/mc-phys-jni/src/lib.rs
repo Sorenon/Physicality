@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 // This is the interface to the JVM that we'll call the majority of our
 // methods on.
 use jni::JNIEnv;
@@ -7,23 +5,23 @@ use jni::JNIEnv;
 // These objects are what you should use as arguments to your native
 // function. They carry extra lifetime information to prevent them escaping
 // this context and getting used after being GC'd.
-use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
+use jni::objects::{JClass, JObject};
 
 // This is just a pointer. We'll be returning it from our function. We
 // can't return one of the objects with lifetime information because the
 // lifetime checker won't let us.
-use jni::sys::{jfloat, jint, jlong, jobject, jstring};
+use jni::sys::{jfloat, jint, jlong};
 use rapier3d::na::Vector3;
 
-use physics::{PhysicsWorld, CallbackContext, FFI_AABB, Callback, PHYSICS_WORLDS, make_colliders};
+use physics::{make_colliders, Callback, CallbackContext, FFI_AABB, PHYSICS_WORLDS};
 
 mod physics;
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_createPhysicsWorld(
     env: JNIEnv,
-    class: JClass,
-    level: JObject,
+    _class: JClass,
+    _level: JObject,
     callback: JObject,
 ) -> jint {
     let url = format!(
@@ -39,25 +37,25 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_create
     .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(2000)); // Wait for debugger to attach
 
-    return physics::create_physics_world(Callback {
+    physics::create_physics_world(Callback {
         object: env.new_global_ref(callback).unwrap(),
-    }) as i32;
+    }) as i32
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_step(
     env: JNIEnv,
-    class: JClass,
+    _class: JClass,
     physics_world: jint,
     delta_time: jfloat,
 ) -> jint {
-    return physics::step_physics_world(physics_world as usize - 1, delta_time, env) as i32;
+    physics::step_physics_world(physics_world as usize - 1, delta_time, env) as i32
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_addPhysicsBody(
-    env: JNIEnv,
-    class: JClass,
+    _env: JNIEnv,
+    _class: JClass,
     physics_world: jint,
     x: jfloat,
     y: jfloat,
@@ -78,7 +76,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_addPhy
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBodyPosition(
     env: JNIEnv,
-    class: JClass,
+    _class: JClass,
     physics_world: jint,
     body: jlong,
     position_out: JObject,
@@ -101,7 +99,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBodyRenderTransform(
     env: JNIEnv,
-    class: JClass,
+    _class: JClass,
     physics_world: jint,
     body: jlong,
     position_out: JObject,
@@ -153,47 +151,58 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_blockUpdated(
-    env: JNIEnv,
-    class: JClass,
+    _env: JNIEnv,
+    _class: JClass,
     physics_world: jint,
     x: jint,
     y: jint,
     z: jint,
     addr: jlong,
     len: jlong,
-)  -> jint {
+) -> jint {
     let mut lock = PHYSICS_WORLDS.lock();
-    let physics_world = lock.get_mut(physics_world as usize - 1).unwrap(); 
+    let physics_world = lock.get_mut(physics_world as usize - 1).unwrap();
 
     let pos = Vector3::new(x, y, z);
 
     if let Some(old_colliders) = physics_world.blocks.get(&pos).unwrap() {
         for handle in old_colliders {
-            physics_world.collider_set.remove(*handle, &mut physics_world.island_manager, &mut physics_world.rigid_body_set, false);
+            physics_world.collider_set.remove(
+                *handle,
+                &mut physics_world.island_manager,
+                &mut physics_world.rigid_body_set,
+                false,
+            );
         }
     }
-    
+
     let aabbs = std::slice::from_raw_parts(addr as usize as *const FFI_AABB, len as usize);
 
-    if aabbs.len() == 0 {
+    if aabbs.is_empty() {
         physics_world.blocks.insert(pos, None);
     } else {
-        physics_world.blocks.insert(pos, Some(make_colliders(pos, aabbs, &mut physics_world.collider_set)));
+        physics_world.blocks.insert(
+            pos,
+            Some(make_colliders(pos, aabbs, &mut physics_world.collider_set)),
+        );
     }
 
-    return 0;
+    0
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_sendBlockInfo(
-    env: JNIEnv,
-    class: JClass,
+    _env: JNIEnv,
+    _class: JClass,
     callback_context: jlong,
     index: jint,
     addr: jlong,
     len: jlong,
 ) -> jint {
     let callback_context = &mut *(callback_context as *mut CallbackContext);
-    callback_context.revive_block_info(index, std::slice::from_raw_parts(addr as usize as *const FFI_AABB, len as usize));
-    return 0;
+    callback_context.revive_block_info(
+        index,
+        std::slice::from_raw_parts(addr as usize as *const FFI_AABB, len as usize),
+    );
+    0
 }

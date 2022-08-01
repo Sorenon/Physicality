@@ -1,7 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use jni::{
     objects::{GlobalRef, JValue},
@@ -9,9 +6,9 @@ use jni::{
     JNIEnv,
 };
 use once_cell::sync::Lazy;
-use parking_lot::{Mutex, MutexGuard, ReentrantMutex};
+use parking_lot::Mutex;
 use rapier3d::{
-    na::{Point3, UnitQuaternion, Vector3},
+    na::{UnitQuaternion, Vector3},
     parry::bounding_volume::BoundingVolume,
     prelude::*,
 };
@@ -58,7 +55,7 @@ fn test() {
         Vector3::zeros(),
         Vector3::new(1., 1., 0.).normalize() * 45f32.to_radians(),
     ));
-    let aabb = collider.compute_aabb();
+    let _aabb = collider.compute_aabb();
 
     let aabb = AABB {
         mins: Point3::new(-5.0, 2.0, -1.0),
@@ -114,7 +111,7 @@ pub fn create_physics_world(callback: Callback) -> usize {
 
     let mut physics_worlds = PHYSICS_WORLDS.lock();
     physics_worlds.push(physics_world);
-    return physics_worlds.len();
+    physics_worlds.len()
 }
 
 pub fn step_physics_world(index: usize, delta_time: f32, env: JNIEnv) -> i32 {
@@ -196,7 +193,7 @@ pub fn step_physics_world(index: usize, delta_time: f32, env: JNIEnv) -> i32 {
         );
     }
 
-    return 0;
+    0
 }
 
 pub fn add_physics_body(index: usize, x: f32, y: f32, z: f32) -> Result<(u32, u32), i32> {
@@ -216,7 +213,7 @@ pub fn add_physics_body(index: usize, x: f32, y: f32, z: f32) -> Result<(u32, u3
         .collider_set
         .insert_with_parent(shape, body, &mut physics_world.rigid_body_set);
 
-    return Ok(body.into_raw_parts());
+    Ok(body.into_raw_parts())
 }
 
 pub fn get_body_translation(index: usize, body: (u32, u32)) -> Result<Vector3<f32>, i32> {
@@ -300,15 +297,20 @@ impl Callback {
 impl<'a> CallbackContext<'a> {
     pub fn revive_block_info(&mut self, index: i32, aabbs: &[FFI_AABB]) {
         for i in (self.last_index + 1)..index {
-            assert!(self.blocks.insert(self.positions[i as usize], None).is_none());
+            assert!(self
+                .blocks
+                .insert(self.positions[i as usize], None)
+                .is_none());
         }
 
         self.last_index = index;
 
         let pos = self.positions[index as usize];
 
-        assert!(self.blocks
-            .insert(pos, Some(make_colliders(pos, aabbs, self.collider_set))).is_none());
+        assert!(self
+            .blocks
+            .insert(pos, Some(make_colliders(pos, aabbs, self.collider_set)))
+            .is_none());
     }
 }
 
