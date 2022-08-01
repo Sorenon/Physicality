@@ -19,12 +19,7 @@ public class LevelMixin {
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z", at = @At("RETURN"))
     void onSetBlock(BlockPos pos, BlockState state, int flags, int maxUpdateDepth, CallbackInfoReturnable<Boolean> cir) {
         if (this.isClientSide && cir.getReturnValue()) {
-            //TODO activate inactive debris
-            var physicsWorld = PhysicalityModClient.INSTANCE.physicsWorld;
-            var body = physicsWorld.blocks.remove(pos);
-            if (body != null) {
-                physicsWorld.physicsSpace.remove(body);
-            }
+            PhysicalityModClient.INSTANCE.rapierPhysicsWorld.setBlockDirty(pos);
         }
     }
 }

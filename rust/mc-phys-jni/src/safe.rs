@@ -1,39 +1,63 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    cell::{Ref, RefCell},
+    collections::{HashMap, HashSet},
+};
 
-use jni::JNIEnv;
+use jni::{
+    objects::{GlobalRef, JValue},
+    sys::{jint, jlong},
+    JNIEnv,
+};
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard, ReentrantMutex};
 use rapier3d::{
-    na::{UnitQuaternion, Vector3, Point3},
+    na::{Point3, UnitQuaternion, Vector3},
     parry::bounding_volume::BoundingVolume,
     prelude::*,
 };
 
-use crate::Callback;
-
 pub struct PhysicsWorld {
-    rigid_body_set: RigidBodySet,
-    collider_set: ColliderSet,
-    gravity: Vector3<f32>,
-    integration_parameters: IntegrationParameters,
-    physics_pipeline: PhysicsPipeline,
-    island_manager: IslandManager,
-    broad_phase: BroadPhase,
-    narrow_phase: NarrowPhase,
-    impulse_joint_set: ImpulseJointSet,
-    multibody_joint_set: MultibodyJointSet,
-    ccd_solver: CCDSolver,
+    pub rigid_body_set: RigidBodySet,
+    pub collider_set: ColliderSet,
+    pub gravity: Vector3<f32>,
+    pub integration_parameters: IntegrationParameters,
+    pub physics_pipeline: PhysicsPipeline,
+    pub island_manager: IslandManager,
+    pub broad_phase: BroadPhase,
+    pub narrow_phase: NarrowPhase,
+    pub impulse_joint_set: ImpulseJointSet,
+    pub multibody_joint_set: MultibodyJointSet,
+    pub ccd_solver: CCDSolver,
 
-    callback: Callback,
-    delta_time: f32,
-    blocks: HashMap<Vector3<i32>, RigidBodyHandle>,
-    cache_set: HashSet<Vector3<i32>>
+    pub callback: Callback,
+    pub delta_time: f32,
+    pub blocks: HashMap<Vector3<i32>, Option<Vec<ColliderHandle>>>,
+}
+
+#[repr(C)]
+pub struct FFI_AABB {
+    min_x: f32,
+    min_y: f32,
+    min_z: f32,
+    max_x: f32,
+    max_y: f32,
+    max_z: f32,
+}
+
+pub struct CallbackContext<'a> {
+    last_index: i32,
+    positions: &'a Vec<Vector3<i32>>,
+    blocks: &'a mut HashMap<Vector3<i32>, Option<Vec<ColliderHandle>>>,
+    collider_set: &'a mut ColliderSet,
 }
 
 #[test]
 fn test() {
     let mut collider = ColliderBuilder::cuboid(0.5, 0.5, 0.5).build();
-    collider.set_position(Isometry::new(Vector3::zeros(), Vector3::new(1., 1., 0.).normalize() * 45f32.to_radians()));
+    collider.set_position(Isometry::new(
+        Vector3::zeros(),
+        Vector3::new(1., 1., 0.).normalize() * 45f32.to_radians(),
+    ));
     let aabb = collider.compute_aabb();
 
     let aabb = AABB {
@@ -64,21 +88,15 @@ fn test() {
     //     create_physics_world(std::mem::zeroed())
     // };
 
-    // collider = 
+    // collider =
 }
 
 pub static PHYSICS_WORLDS: Lazy<Mutex<Vec<PhysicsWorld>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 pub fn create_physics_world(callback: Callback) -> usize {
-    let mut collider_set = ColliderSet::new();
-
-    /* Create the ground. */
-    let collider = ColliderBuilder::cuboid(100.0, 0.1, 100.0).build();
-    collider_set.insert(collider);
-
     let physics_world = PhysicsWorld {
         rigid_body_set: RigidBodySet::new(),
-        collider_set,
+        collider_set: ColliderSet::new(),
         gravity: vector![0.0, -9.81, 0.0],
         integration_parameters: IntegrationParameters::default(),
         physics_pipeline: PhysicsPipeline::new(),
@@ -92,7 +110,6 @@ pub fn create_physics_world(callback: Callback) -> usize {
         delta_time: 0.,
         callback,
         blocks: HashMap::new(),
-        cache_set: HashSet::new(),
     };
 
     let mut physics_worlds = PHYSICS_WORLDS.lock();
@@ -112,56 +129,56 @@ pub fn step_physics_world(index: usize, delta_time: f32, env: JNIEnv) -> i32 {
     while physics_world.delta_time > 1. / 60. {
         physics_world.delta_time -= 1. / 60.;
 
-        // let mut wanted_blocks = HashSet::new();
-        let wanted_blocks = &mut physics_world.cache_set;
+        let mut wanted_blocks = HashSet::new();
 
-        // for (_, body) in physics_world.rigid_body_set.iter() {
-        //     if body.is_dynamic() && !body.is_sleeping() {
-        //         let mut aabb: Option<AABB> = None;
+        for (_, body) in physics_world.rigid_body_set.iter() {
+            if body.is_dynamic() && !body.is_sleeping() {
+                let mut aabb: Option<AABB> = None;
 
-        //         for collider in body
-        //             .colliders()
-        //             .iter()
-        //             .map(|handle| physics_world.collider_set.get(*handle).unwrap())
-        //         {
-        //             let shape_aabb = collider.compute_aabb();
+                for collider in body
+                    .colliders()
+                    .iter()
+                    .map(|handle| physics_world.collider_set.get(*handle).unwrap())
+                {
+                    let shape_aabb = collider.compute_aabb();
 
-        //             match aabb {
-        //                 Some(mut aabb) => aabb.merge(&shape_aabb),
-        //                 None => aabb = Some(shape_aabb),
-        //             }
-        //         }
+                    match aabb {
+                        Some(mut aabb) => aabb.merge(&shape_aabb),
+                        None => aabb = Some(shape_aabb),
+                    }
+                }
 
-        //         if let Some(aabb) = aabb {
-        //             let min_x = (aabb.mins.x - 0.01).floor() as i32;
-        //             let min_y = (aabb.mins.y - 0.01).floor() as i32;
-        //             let min_z = (aabb.mins.z - 0.01).floor() as i32;
+                if let Some(aabb) = aabb {
+                    let min_x = (aabb.mins.x - 0.01).floor() as i32 - 1;
+                    let min_y = (aabb.mins.y - 0.01).floor() as i32 - 1;
+                    let min_z = (aabb.mins.z - 0.01).floor() as i32 - 1;
 
-        //             let max_x = (aabb.maxs.x + 0.01).ceil() as i32;
-        //             let max_y = (aabb.maxs.y + 0.01).ceil() as i32;
-        //             let max_z = (aabb.maxs.z + 0.01).ceil() as i32;
+                    let max_x = (aabb.maxs.x + 0.01).ceil() as i32 + 1;
+                    let max_y = (aabb.maxs.y + 0.01).ceil() as i32 + 1;
+                    let max_z = (aabb.maxs.z + 0.01).ceil() as i32 + 1;
 
-        //             // for x in min_x..=max_x {
-        //             //     for y in min_y..=max_y {
-        //             //         for z in min_z..=max_z {
-        //             //             let pos = Vector3::new(x, y, z);
-        //             //             if !physics_world.blocks.contains_key(&pos) && !wanted_blocks.contains(&pos) {
-        //             //                 wanted_blocks.insert(pos);
-        //             //             }
-        //             //         }
-        //             //     }
-        //             // }
-        //         }
-        //     }
-        // }
-
-        let wanted_blocks = wanted_blocks.iter().copied().collect::<Vec<_>>();
-
-        physics_world.callback.run_callback(env, &wanted_blocks);
-
-        for pos in wanted_blocks {
-            physics_world.blocks.insert(pos, RigidBodyHandle::from_raw_parts(0, 0));
+                    for x in min_x..=max_x {
+                        for y in min_y..=max_y {
+                            for z in min_z..=max_z {
+                                let pos = Vector3::new(x, y, z);
+                                if !physics_world.blocks.contains_key(&pos)
+                                    && !wanted_blocks.contains(&pos)
+                                {
+                                    wanted_blocks.insert(pos);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        physics_world.callback.run_callback(
+            env,
+            wanted_blocks.into_iter().collect::<Vec<_>>(),
+            &mut physics_world.blocks,
+            &mut physics_world.collider_set,
+        );
 
         physics_world.physics_pipeline.step(
             &mut physics_world.gravity,
@@ -235,4 +252,90 @@ pub fn get_render_transform(
         Some(body) => Ok((*body.translation(), *body.rotation())),
         None => Err(-1),
     }
+}
+
+pub struct Callback {
+    pub object: GlobalRef,
+}
+
+impl Callback {
+    pub fn run_callback(
+        &self,
+        env: JNIEnv,
+        wanted_blocks: Vec<Vector3<i32>>,
+        blocks: &mut HashMap<Vector3<i32>, Option<Vec<ColliderHandle>>>,
+        collider_set: &mut ColliderSet,
+    ) {
+        let mut callback_context = CallbackContext {
+            last_index: -1,
+            positions: &wanted_blocks,
+            blocks,
+            collider_set,
+        };
+
+        env.call_method(
+            &self.object,
+            "preStep",
+            "(JJI)V",
+            &[
+                JValue::Long(std::ptr::addr_of_mut!(callback_context) as jlong),
+                JValue::Long(wanted_blocks.as_ptr() as jlong),
+                JValue::Int(wanted_blocks.len() as jint),
+            ],
+        )
+        .unwrap();
+
+        for i in (callback_context.last_index + 1)..wanted_blocks.len() as i32 {
+            callback_context
+                .blocks
+                .insert(callback_context.positions[i as usize], None);
+        }
+
+        for pos in wanted_blocks {
+            assert!(blocks.contains_key(&pos));
+        }
+    }
+}
+
+impl<'a> CallbackContext<'a> {
+    pub fn revive_block_info(&mut self, index: i32, aabbs: &[FFI_AABB]) {
+        for i in (self.last_index + 1)..index {
+            assert!(self.blocks.insert(self.positions[i as usize], None).is_none());
+        }
+
+        self.last_index = index;
+
+        let pos = self.positions[index as usize];
+
+        assert!(self.blocks
+            .insert(pos, Some(make_colliders(pos, aabbs, self.collider_set))).is_none());
+    }
+}
+
+pub fn make_colliders(
+    pos: Vector3<i32>,
+    aabbs: &[FFI_AABB],
+    collider_set: &mut ColliderSet,
+) -> Vec<ColliderHandle> {
+    let mut colliders = Vec::with_capacity(aabbs.len());
+
+    for aabb in aabbs {
+        let hx = (aabb.max_x - aabb.min_x) / 2.;
+        let hy = (aabb.max_y - aabb.min_y) / 2.;
+        let hz = (aabb.max_z - aabb.min_z) / 2.;
+
+        colliders.push(
+            collider_set.insert(
+                ColliderBuilder::cuboid(hx, hy, hz)
+                    .translation(Vector3::new(
+                        pos.x as f32 + aabb.min_x + hx,
+                        pos.y as f32 + aabb.min_y + hy,
+                        pos.z as f32 + aabb.min_z + hz,
+                    ))
+                    .build(),
+            ),
+        );
+    }
+
+    colliders
 }

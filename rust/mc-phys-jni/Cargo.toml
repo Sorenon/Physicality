@@ -11,3 +11,9 @@ jni = "0.19"
 rapier3d = "0.14"
 once_cell = "1.13"
 parking_lot = "0.12"
+
+[profile.release]
+codegen-units = 1
+
+[profile.dev.package.rapier3d]
+opt-level = 3

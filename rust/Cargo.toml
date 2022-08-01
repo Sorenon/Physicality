@@ -1,2 +1,2 @@
 [workspace]
-members = [ "mc-phys", "mc-phys-jni" ]
+members = [ "mc-phys-jni" ]

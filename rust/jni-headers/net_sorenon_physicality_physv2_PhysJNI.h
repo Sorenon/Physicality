@@ -50,10 +50,18 @@ JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_getBodyRender
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    blockUpdated
- * Signature: (IIII)I
+ * Signature: (IIIIJJ)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_blockUpdated
-  (JNIEnv *, jclass, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jint, jint, jint, jint, jlong, jlong);
+
+/*
+ * Class:     net_sorenon_physicality_physv2_PhysJNI
+ * Method:    sendBlockInfo
+ * Signature: (JIJJ)I
+ */
+JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_sendBlockInfo
+  (JNIEnv *, jclass, jlong, jint, jlong, jlong);
 
 #ifdef __cplusplus
 }

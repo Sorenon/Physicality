@@ -1,35 +1,20 @@
 package net.sorenon.physicality;
 
-import com.google.common.collect.ImmutableList;
-import com.jme3.bullet.collision.shapes.HullCollisionShape;
-import com.jme3.bullet.objects.PhysicsRigidBody;
-import com.jme3.bullet.util.DebugShapeFactory;
-import com.jme3.math.Plane;
-import com.jme3.math.Transform;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Quaternion;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.sorenon.physicality.mesh.ConvexHull;
-import net.sorenon.physicality.physics_lib.NativeLoader;
-import net.sorenon.physicality.physics_lib.PhysicsWorld;
-import net.sorenon.physicality.physv2.PhysJNI;
-import net.sorenon.physicality.physv2.PhysicsWorld2;
-import org.joml.Vector3f;
+import net.sorenon.physicality.physv2.RapierPhysicsWorld;
 
 import java.util.HashSet;
 
@@ -37,8 +22,7 @@ public class PhysicalityModClient implements ClientModInitializer {
 
     public static PhysicalityModClient INSTANCE;
 
-    public PhysicsWorld physicsWorld;
-    public PhysicsWorld2 physicsWorld2;
+    public RapierPhysicsWorld rapierPhysicsWorld;
 
     public HashSet<Debris> debrisList = new HashSet<>();
 
@@ -46,17 +30,16 @@ public class PhysicalityModClient implements ClientModInitializer {
     public void onInitializeClient() {
         INSTANCE = this;
 
-        this.physicsWorld2 = new PhysicsWorld2(null);
-
-        NativeLoader.load();
-
-        this.physicsWorld = new PhysicsWorld();
-
         ClientTickEvents.START_WORLD_TICK.register(world -> {
+            if (this.rapierPhysicsWorld == null) {
+                this.rapierPhysicsWorld = new RapierPhysicsWorld(world);
+            }
+
             debrisList.removeIf(debris -> {
                 debris.decayTicks -= 1;
                 if (debris.decayTicks <= 0) {
-                    physicsWorld.physicsSpace.remove(debris.rigidBody);
+                    //TODO
+//                    physicsWorld.physicsSpace.remove(debris.rigidBody);
                     return true;
                 }
                 return false;
@@ -73,59 +56,59 @@ public class PhysicalityModClient implements ClientModInitializer {
                 debris.render(context.world(), context.matrixStack(), context.consumers());
             }
 
-            for (var body : this.physicsWorld.physicsSpace.getRigidBodyList()) {
-                var transform = body.getTransform(new Transform());
-                var pos = transform.getTranslation();
-                var rotation = transform.getRotation();
-
-//                var dispatcher = Minecraft.getInstance().getBlockRenderer();
-
-                poses.pushPose();
-                BlockPos blockPos = new BlockPos(pos.x, pos.y, pos.z);
-                poses.translate(pos.x, pos.y, pos.z);
-
-                poses.mulPose(new Quaternion(rotation.getX(), rotation.getY(), rotation.getZ(), rotation.getW()));
-
-                var buffer = context.consumers().getBuffer(RenderType.LINES);
-                var points = DebugShapeFactory.debugVertices(body.getCollisionShape(), 1);
-                var pose = poses.last().pose();
-
-                points.flip();
-                while (points.hasRemaining()) {
-                    float x = points.get();
-                    float y = points.get();
-                    float z = points.get();
-
-                    buffer.vertex(pose, x, y, z)
-                            .color(255, 10, 10, 255)
-                            .normal(0, 0, 0)
-                            .endVertex();
-                }
-                if (points.limit() % 2 != 0) {
-                    buffer.vertex(pose, 0, 0, 0)
-                            .color(255, 10, 10, 255)
-                            .normal(0, 0, 0)
-                            .endVertex();
-                }
-
-//                poses.translate(-0.05f, -0.05f, -0.05f);
-//                poses.scale(1.1f, 1.1f, 1.1f);
-//                dispatcher
-//                        .getModelRenderer()
-//                        .tesselateBlock(
-//                                context.world(),
-//                                dispatcher.getBlockModel(Blocks.GLASS.defaultBlockState()),
-//                                Blocks.GLASS.defaultBlockState(),
-//                                blockPos,
-//                                poses,
-//                                context.consumers().getBuffer(ItemBlockRenderTypes.getMovingBlockRenderType(Blocks.GLASS.defaultBlockState())),
-//                                false,
-//                                RandomSource.create(),
-//                                0,
-//                                OverlayTexture.NO_OVERLAY
-//                        );
-                poses.popPose();
-            }
+//            for (var body : this.physicsWorld.physicsSpace.getRigidBodyList()) {
+//                var transform = body.getTransform(new Transform());
+//                var pos = transform.getTranslation();
+//                var rotation = transform.getRotation();
+//
+////                var dispatcher = Minecraft.getInstance().getBlockRenderer();
+//
+//                poses.pushPose();
+//                BlockPos blockPos = new BlockPos(pos.x, pos.y, pos.z);
+//                poses.translate(pos.x, pos.y, pos.z);
+//
+//                poses.mulPose(new Quaternion(rotation.getX(), rotation.getY(), rotation.getZ(), rotation.getW()));
+//
+//                var buffer = context.consumers().getBuffer(RenderType.LINES);
+//                var points = DebugShapeFactory.debugVertices(body.getCollisionShape(), 1);
+//                var pose = poses.last().pose();
+//
+//                points.flip();
+//                while (points.hasRemaining()) {
+//                    float x = points.get();
+//                    float y = points.get();
+//                    float z = points.get();
+//
+//                    buffer.vertex(pose, x, y, z)
+//                            .color(255, 10, 10, 255)
+//                            .normal(0, 0, 0)
+//                            .endVertex();
+//                }
+//                if (points.limit() % 2 != 0) {
+//                    buffer.vertex(pose, 0, 0, 0)
+//                            .color(255, 10, 10, 255)
+//                            .normal(0, 0, 0)
+//                            .endVertex();
+//                }
+//
+////                poses.translate(-0.05f, -0.05f, -0.05f);
+////                poses.scale(1.1f, 1.1f, 1.1f);
+////                dispatcher
+////                        .getModelRenderer()
+////                        .tesselateBlock(
+////                                context.world(),
+////                                dispatcher.getBlockModel(Blocks.GLASS.defaultBlockState()),
+////                                Blocks.GLASS.defaultBlockState(),
+////                                blockPos,
+////                                poses,
+////                                context.consumers().getBuffer(ItemBlockRenderTypes.getMovingBlockRenderType(Blocks.GLASS.defaultBlockState())),
+////                                false,
+////                                RandomSource.create(),
+////                                0,
+////                                OverlayTexture.NO_OVERLAY
+////                        );
+//                poses.popPose();
+//            }
 
             poses.translate(0, 80, 0);
             drawDebris(poses, context.consumers(), Blocks.BRICKS.defaultBlockState(), context.world(), new BlockPos(0, 80, 0));
@@ -140,7 +123,7 @@ public class PhysicalityModClient implements ClientModInitializer {
             return;
         }
 
-        long bodyHandle = physicsWorld2.addBody(pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f);
+        long bodyHandle = rapierPhysicsWorld.addBody(pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f);
             var debris = new Debris(bodyHandle, 10000, state, pos);
 
             this.debrisList.add(debris);

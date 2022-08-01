@@ -19,5 +19,7 @@ public class PhysJNI {
 
     protected static native int getBodyRenderTransform(int physicsWorld, long bodyHandle, Vector3f position, Quaternionf orientation);
 
-    protected static native int blockUpdated(int physicalWorld, int x, int y, int z);
+    protected static native int blockUpdated(int physicalWorld, int x, int y, int z, long addr, long len);
+
+    protected static native int sendBlockInfo(long callbackContext, int index, long addr, long len);
 }

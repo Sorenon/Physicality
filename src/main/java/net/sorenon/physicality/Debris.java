@@ -1,7 +1,5 @@
 package net.sorenon.physicality;
 
-import com.jme3.bullet.objects.PhysicsRigidBody;
-import com.jme3.math.Transform;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Quaternion;
 import net.minecraft.client.Minecraft;
@@ -36,7 +34,7 @@ public class Debris {
 //        var transform = this.rigidBody.getTransform(new Transform());
         var pos = new Vector3f(0, 0, 0);
         var orientation = new Quaternionf();
-        PhysicalityModClient.INSTANCE.physicsWorld2.getRenderTransform(this.rigidBody, pos, orientation);
+        PhysicalityModClient.INSTANCE.rapierPhysicsWorld.getRenderTransform(this.rigidBody, pos, orientation);
 //        var rotation = transform.getRotation();
 
         poseStack.pushPose();
