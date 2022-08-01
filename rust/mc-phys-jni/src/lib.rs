@@ -14,13 +14,10 @@ use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 // lifetime checker won't let us.
 use jni::sys::{jfloat, jint, jlong, jobject, jstring};
 use rapier3d::na::Vector3;
-use rapier3d::prelude::{
-    ColliderBuilder, ColliderHandle, ColliderSet, EventHandler, RigidBodyBuilder, RigidBodyHandle,
-    RigidBodySet,
-};
-use safe::{PhysicsWorld, CallbackContext, FFI_AABB, Callback, PHYSICS_WORLDS, make_colliders};
 
-mod safe;
+use physics::{PhysicsWorld, CallbackContext, FFI_AABB, Callback, PHYSICS_WORLDS, make_colliders};
+
+mod physics;
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_createPhysicsWorld(
@@ -42,7 +39,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_create
     .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(2000)); // Wait for debugger to attach
 
-    return safe::create_physics_world(Callback {
+    return physics::create_physics_world(Callback {
         object: env.new_global_ref(callback).unwrap(),
     }) as i32;
 }
@@ -54,7 +51,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_step(
     physics_world: jint,
     delta_time: jfloat,
 ) -> jint {
-    return safe::step_physics_world(physics_world as usize - 1, delta_time, env) as i32;
+    return physics::step_physics_world(physics_world as usize - 1, delta_time, env) as i32;
 }
 
 #[no_mangle]
@@ -69,7 +66,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_addPhy
 ) -> jint {
     let out = out as usize as *mut u64;
 
-    match safe::add_physics_body(physics_world as usize - 1, x, y, z) {
+    match physics::add_physics_body(physics_world as usize - 1, x, y, z) {
         Ok(res) => {
             *out = std::mem::transmute(res);
             0
@@ -86,7 +83,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
     body: jlong,
     position_out: JObject,
 ) -> jint {
-    match safe::get_body_translation(physics_world as usize - 1, std::mem::transmute(body)) {
+    match physics::get_body_translation(physics_world as usize - 1, std::mem::transmute(body)) {
         Ok(pos) => {
             env.set_field(position_out, "x", "F", jni::objects::JValue::Float(pos.x))
                 .unwrap();
@@ -110,7 +107,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
     position_out: JObject,
     orientation_out: JObject,
 ) -> jint {
-    match safe::get_render_transform(physics_world as usize - 1, std::mem::transmute(body)) {
+    match physics::get_render_transform(physics_world as usize - 1, std::mem::transmute(body)) {
         Ok((pos, orientation)) => {
             env.set_field(position_out, "x", "F", jni::objects::JValue::Float(pos.x))
                 .unwrap();
