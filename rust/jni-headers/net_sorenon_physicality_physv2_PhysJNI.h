@@ -10,50 +10,50 @@ extern "C" {
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    createPhysicsWorld
- * Signature: (Lnet/minecraft/world/level/Level;Lnet/sorenon/physicality/physv2/PhysicsCallback;)I
+ * Signature: (Lnet/minecraft/world/level/Level;Lnet/sorenon/physicality/physv2/PhysicsCallback;)J
  */
-JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_createPhysicsWorld
+JNIEXPORT jlong JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_createPhysicsWorld
   (JNIEnv *, jclass, jobject, jobject);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    step
- * Signature: (IF)I
+ * Signature: (JF)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_step
-  (JNIEnv *, jclass, jint, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    addPhysicsBody
- * Signature: (IFFFJ)I
+ * Signature: (JFFFJ)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_addPhysicsBody
-  (JNIEnv *, jclass, jint, jfloat, jfloat, jfloat, jlong);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jlong);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    getBodyPosition
- * Signature: (IJLorg/joml/Vector3f;)I
+ * Signature: (JJLorg/joml/Vector3f;)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_getBodyPosition
-  (JNIEnv *, jclass, jint, jlong, jobject);
+  (JNIEnv *, jclass, jlong, jlong, jobject);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    getBodyRenderTransform
- * Signature: (IJLorg/joml/Vector3f;Lorg/joml/Quaternionf;)I
+ * Signature: (JJLorg/joml/Vector3f;Lorg/joml/Quaternionf;)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_getBodyRenderTransform
-  (JNIEnv *, jclass, jint, jlong, jobject, jobject);
+  (JNIEnv *, jclass, jlong, jlong, jobject, jobject);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI
  * Method:    blockUpdated
- * Signature: (IIIIJJ)I
+ * Signature: (JIIIJJ)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physv2_PhysJNI_blockUpdated
-  (JNIEnv *, jclass, jint, jint, jint, jint, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jlong, jlong);
 
 /*
  * Class:     net_sorenon_physicality_physv2_PhysJNI

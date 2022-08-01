@@ -5,8 +5,7 @@ use jni::{
     sys::{jint, jlong},
     JNIEnv,
 };
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+
 use rapier3d::{
     na::{Isometry3, UnitQuaternion, Vector3},
     parry::bounding_volume::BoundingVolume,
@@ -14,14 +13,6 @@ use rapier3d::{
 };
 
 pub static STEP_TIME: f32 = 1. / 60.;
-
-pub struct PhysicsWorld {
-    pub rapier: RapierWorld,
-    pub callback: Callback,
-    pub delta_time: f32,
-    pub blocks: HashMap<Vector3<i32>, Option<Vec<ColliderHandle>>>,
-    pub old_transforms: Vec<Isometry3<f32>>,
-}
 
 pub struct RapierWorld {
     pub rigid_body_set: RigidBodySet,
@@ -98,177 +89,154 @@ pub struct CallbackContext<'a> {
     collider_set: &'a mut ColliderSet,
 }
 
-pub static PHYSICS_WORLDS: Lazy<Mutex<Vec<PhysicsWorld>>> = Lazy::new(|| Mutex::new(Vec::new()));
-
-pub fn create_physics_world(callback: Callback) -> usize {
-    let physics_world = PhysicsWorld {
-        rapier: RapierWorld::new(),
-        delta_time: 0.,
-        callback,
-        blocks: HashMap::new(),
-        old_transforms: Vec::new(),
-    };
-
-    let mut physics_worlds = PHYSICS_WORLDS.lock();
-    physics_worlds.push(physics_world);
-    physics_worlds.len()
+pub struct PhysicsWorld {
+    pub rapier: RapierWorld,
+    pub callback: Callback,
+    pub delta_time: f32,
+    pub blocks: HashMap<Vector3<i32>, Option<Vec<ColliderHandle>>>,
+    pub old_positions: Vec<Isometry3<f32>>,
 }
 
-pub fn step_physics_world(index: usize, delta_time: f32, env: JNIEnv) -> i32 {
-    let mut lock = PHYSICS_WORLDS.lock();
-    let mut physics_world = match lock.get_mut(index) {
-        Some(physics_world) => physics_world,
-        None => return -1,
-    };
+impl PhysicsWorld {
+    pub fn new(callback: Callback) -> Self {
+        Self {
+            rapier: RapierWorld::new(),
+            delta_time: 0.,
+            callback,
+            blocks: HashMap::new(),
+            old_positions: Vec::new(),
+        }
+    }
 
-    physics_world.delta_time += delta_time;
+    pub fn step_physics_world(&mut self, delta_time: f32, env: JNIEnv) -> i32 {
+        self.delta_time += delta_time;
 
-    while physics_world.delta_time >= STEP_TIME {
-        physics_world.delta_time -= STEP_TIME;
+        while self.delta_time >= STEP_TIME {
+            self.delta_time -= STEP_TIME;
 
-        let mut wanted_blocks = HashSet::new();
+            let mut wanted_blocks = HashSet::new();
 
-        for (body_handle, body) in physics_world.rapier.rigid_body_set.iter() {
-            if body.is_dynamic() && !body.is_sleeping() {
-                let index = body_handle.into_raw_parts().0 as usize;
-                *physics_world.old_transforms.get_mut(index).unwrap() = *body.position();
+            for (body_handle, body) in self.rapier.rigid_body_set.iter() {
+                if body.is_dynamic() && !body.is_sleeping() {
+                    let index = body_handle.into_raw_parts().0 as usize;
+                    *self.old_positions.get_mut(index).unwrap() = *body.position();
 
-                let mut aabb: Option<AABB> = None;
+                    let mut aabb: Option<AABB> = None;
 
-                for collider in body
-                    .colliders()
-                    .iter()
-                    .map(|handle| physics_world.rapier.collider_set.get(*handle).unwrap())
-                {
-                    let shape_aabb = collider.compute_aabb();
+                    for collider in body
+                        .colliders()
+                        .iter()
+                        .map(|handle| self.rapier.collider_set.get(*handle).unwrap())
+                    {
+                        let shape_aabb = collider.compute_aabb();
 
-                    match aabb {
-                        Some(mut aabb) => aabb.merge(&shape_aabb),
-                        None => aabb = Some(shape_aabb),
+                        match aabb {
+                            Some(mut aabb) => aabb.merge(&shape_aabb),
+                            None => aabb = Some(shape_aabb),
+                        }
                     }
-                }
 
-                if let Some(aabb) = aabb {
-                    let min_x = (aabb.mins.x - 0.01).floor() as i32 - 1;
-                    let min_y = (aabb.mins.y - 0.01).floor() as i32 - 1;
-                    let min_z = (aabb.mins.z - 0.01).floor() as i32 - 1;
+                    if let Some(aabb) = aabb {
+                        let min_x = (aabb.mins.x - 0.01).floor() as i32 - 1;
+                        let min_y = (aabb.mins.y - 0.01).floor() as i32 - 1;
+                        let min_z = (aabb.mins.z - 0.01).floor() as i32 - 1;
 
-                    let max_x = (aabb.maxs.x + 0.01).ceil() as i32 + 1;
-                    let max_y = (aabb.maxs.y + 0.01).ceil() as i32 + 1;
-                    let max_z = (aabb.maxs.z + 0.01).ceil() as i32 + 1;
+                        let max_x = (aabb.maxs.x + 0.01).ceil() as i32 + 1;
+                        let max_y = (aabb.maxs.y + 0.01).ceil() as i32 + 1;
+                        let max_z = (aabb.maxs.z + 0.01).ceil() as i32 + 1;
 
-                    for x in min_x..=max_x {
-                        for y in min_y..=max_y {
-                            for z in min_z..=max_z {
-                                let pos = Vector3::new(x, y, z);
-                                if !physics_world.blocks.contains_key(&pos)
-                                    && !wanted_blocks.contains(&pos)
-                                {
-                                    wanted_blocks.insert(pos);
+                        for x in min_x..=max_x {
+                            for y in min_y..=max_y {
+                                for z in min_z..=max_z {
+                                    let pos = Vector3::new(x, y, z);
+                                    if !self.blocks.contains_key(&pos)
+                                        && !wanted_blocks.contains(&pos)
+                                    {
+                                        wanted_blocks.insert(pos);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+            self.callback.run_callback(
+                env,
+                wanted_blocks.into_iter().collect::<Vec<_>>(),
+                &mut self.blocks,
+                &mut self.rapier.collider_set,
+            );
+
+            self.rapier.step();
         }
 
-        physics_world.callback.run_callback(
-            env,
-            wanted_blocks.into_iter().collect::<Vec<_>>(),
-            &mut physics_world.blocks,
-            &mut physics_world.rapier.collider_set,
-        );
-
-        physics_world.rapier.step();
+        0
     }
 
-    0
-}
+    pub fn add_physics_body(&mut self, x: f32, y: f32, z: f32) -> Result<(u32, u32), i32> {
+        let shape = ColliderBuilder::cuboid(0.5, 0.5, 0.5).build();
+        let body = RigidBodyBuilder::dynamic()
+            .translation(Vector3::new(x, y, z))
+            .build();
 
-pub fn add_physics_body(index: usize, x: f32, y: f32, z: f32) -> Result<(u32, u32), i32> {
-    let mut lock = PHYSICS_WORLDS.lock();
-    let physics_world = match lock.get_mut(index) {
-        Some(physics_world) => physics_world,
-        None => return Err(-1),
-    };
+        let position = *body.position();
 
-    let shape = ColliderBuilder::cuboid(0.5, 0.5, 0.5).build();
-    let body = RigidBodyBuilder::dynamic()
-        .translation(Vector3::new(x, y, z))
-        .build();
+        let body = self.rapier.rigid_body_set.insert(body);
+        self.rapier
+            .collider_set
+            .insert_with_parent(shape, body, &mut self.rapier.rigid_body_set);
 
-    let position = *body.position();
-
-    let body = physics_world.rapier.rigid_body_set.insert(body);
-    physics_world.rapier.collider_set.insert_with_parent(
-        shape,
-        body,
-        &mut physics_world.rapier.rigid_body_set,
-    );
-
-    let index = body.into_raw_parts().0 as usize;
-    if index >= physics_world.old_transforms.len() {
-        physics_world
-            .old_transforms
-            .resize(index as usize + 1, Isometry3::identity());
-    }
-
-    *physics_world.old_transforms.get_mut(index).unwrap() = position;
-
-    Ok(body.into_raw_parts())
-}
-
-pub fn get_body_translation(index: usize, body: (u32, u32)) -> Result<Vector3<f32>, i32> {
-    let lock = PHYSICS_WORLDS.lock();
-    let physics_world = match lock.get(index) {
-        Some(physics_world) => physics_world,
-        None => return Err(-1),
-    };
-
-    match physics_world
-        .rapier
-        .rigid_body_set
-        .get(RigidBodyHandle::from_raw_parts(body.0, body.1))
-    {
-        Some(body) => Ok(*body.translation()),
-        None => Err(-1),
-    }
-}
-
-pub fn get_render_transform(
-    index: usize,
-    body_handle: (u32, u32),
-) -> Result<(Vector3<f32>, UnitQuaternion<f32>), i32> {
-    let lock = PHYSICS_WORLDS.lock();
-    let physics_world = match lock.get(index) {
-        Some(physics_world) => physics_world,
-        None => return Err(-1),
-    };
-
-    match physics_world
-        .rapier
-        .rigid_body_set
-        .get(RigidBodyHandle::from_raw_parts(
-            body_handle.0,
-            body_handle.1,
-        )) {
-        Some(body) => {
-            let delta = physics_world.delta_time / STEP_TIME;
-            let old_position = physics_world.old_transforms[body_handle.0 as usize];
-            let current_position = body.position();
-
-            Ok(
-                match old_position.try_lerp_slerp(current_position, delta, 0.0001) {
-                    Some(position) => (position.translation.vector, position.rotation),
-                    None => (
-                        current_position.translation.vector,
-                        current_position.rotation,
-                    ),
-                },
-            )
+        let index = body.into_raw_parts().0 as usize;
+        if index >= self.old_positions.len() {
+            self.old_positions
+                .resize(index as usize + 1, Isometry3::identity());
         }
-        None => Err(-1),
+
+        *self.old_positions.get_mut(index).unwrap() = position;
+
+        Ok(body.into_raw_parts())
+    }
+
+    pub fn get_body_translation(&mut self, body: (u32, u32)) -> Result<Vector3<f32>, i32> {
+        match self
+            .rapier
+            .rigid_body_set
+            .get(RigidBodyHandle::from_raw_parts(body.0, body.1))
+        {
+            Some(body) => Ok(*body.translation()),
+            None => Err(-1),
+        }
+    }
+
+    pub fn get_render_transform(
+        &mut self,
+        body_handle: (u32, u32),
+    ) -> Result<(Vector3<f32>, UnitQuaternion<f32>), i32> {
+        match self
+            .rapier
+            .rigid_body_set
+            .get(RigidBodyHandle::from_raw_parts(
+                body_handle.0,
+                body_handle.1,
+            )) {
+            Some(body) => {
+                let delta = self.delta_time / STEP_TIME;
+                let old_position = self.old_positions[body_handle.0 as usize];
+                let current_position = body.position();
+
+                Ok(
+                    match old_position.try_lerp_slerp(current_position, delta, 0.0001) {
+                        Some(position) => (position.translation.vector, position.rotation),
+                        None => (
+                            current_position.translation.vector,
+                            current_position.rotation,
+                        ),
+                    },
+                )
+            }
+            None => Err(-1),
+        }
     }
 }
 
@@ -330,12 +298,15 @@ impl<'a> CallbackContext<'a> {
 
         assert!(self
             .blocks
-            .insert(pos, Some(make_colliders(pos, aabbs, self.collider_set)))
+            .insert(
+                pos,
+                Some(make_block_colliders(pos, aabbs, self.collider_set))
+            )
             .is_none());
     }
 }
 
-pub fn make_colliders(
+pub fn make_block_colliders(
     pos: Vector3<i32>,
     aabbs: &[FFI_AABB],
     collider_set: &mut ColliderSet,

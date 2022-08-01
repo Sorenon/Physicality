@@ -12,7 +12,7 @@ import java.util.HashSet;
 
 public class RapierPhysicsWorld implements PhysicsCallback {
 
-    private final int handle;
+    private final long handle;
     private final Level level;
 
     private final HashSet<BlockPos> trackingBlocks = new HashSet<>();
