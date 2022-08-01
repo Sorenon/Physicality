@@ -35,7 +35,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_create
     .arg(url)
     .output()
     .unwrap();
-    std::thread::sleep(std::time::Duration::from_millis(2000)); // Wait for debugger to attach
+    // std::thread::sleep(std::time::Duration::from_millis(2000)); // Wait for debugger to attach
 
     physics::create_physics_world(Callback {
         object: env.new_global_ref(callback).unwrap(),
@@ -167,12 +167,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_blockU
 
     if let Some(old_colliders) = physics_world.blocks.get(&pos).unwrap() {
         for handle in old_colliders {
-            physics_world.collider_set.remove(
-                *handle,
-                &mut physics_world.island_manager,
-                &mut physics_world.rigid_body_set,
-                false,
-            );
+            physics_world.rapier.remove_collider(*handle);
         }
     }
 
@@ -183,7 +178,11 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_blockU
     } else {
         physics_world.blocks.insert(
             pos,
-            Some(make_colliders(pos, aabbs, &mut physics_world.collider_set)),
+            Some(make_colliders(
+                pos,
+                aabbs,
+                &mut physics_world.rapier.collider_set,
+            )),
         );
     }
 
