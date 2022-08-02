@@ -24,23 +24,23 @@ thread_local! {
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_createPhysicsWorld(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_createPhysicsWorld(
     env: JNIEnv,
     _class: JClass,
     _level: JObject,
     callback: JObject,
 ) -> jlong {
-    let url = format!(
-        "vscode://vadimcn.vscode-lldb/launch/config?{{'request':'attach','pid':{}}}",
-        std::process::id()
-    );
-    std::process::Command::new(
-        "C:\\Users\\soren\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
-    )
-    .arg("--open-url")
-    .arg(url)
-    .output()
-    .unwrap();
+    // let url = format!(
+    //     "vscode://vadimcn.vscode-lldb/launch/config?{{'request':'attach','pid':{}}}",
+    //     std::process::id()
+    // );
+    // std::process::Command::new(
+    //     "C:\\Users\\soren\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
+    // )
+    // .arg("--open-url")
+    // .arg(url)
+    // .output()
+    // .unwrap();
     // std::thread::sleep(std::time::Duration::from_millis(2000)); // Wait for debugger to attach
 
     let out = PHYSICS_WORLDS.with(|worlds| {
@@ -54,7 +54,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_create
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_step(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_step(
     env: JNIEnv,
     _class: JClass,
     physics_world: jlong,
@@ -70,7 +70,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_step(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_addPhysicsBody(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_addPhysicsBody(
     _env: JNIEnv,
     _class: JClass,
     physics_world: jlong,
@@ -96,7 +96,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_addPhy
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBodyPosition(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_getBodyPosition(
     env: JNIEnv,
     _class: JClass,
     physics_world: jlong,
@@ -124,7 +124,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBodyRenderTransform(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_getBodyRenderTransform(
     env: JNIEnv,
     _class: JClass,
     physics_world: jlong,
@@ -182,7 +182,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_getBod
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_blockUpdated(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_blockUpdated(
     _env: JNIEnv,
     _class: JClass,
     physics_world: jlong,
@@ -225,7 +225,7 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_blockU
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_net_sorenon_physicality_physv2_PhysJNI_sendBlockInfo(
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_sendBlockInfo(
     _env: JNIEnv,
     _class: JClass,
     callback_context: jlong,

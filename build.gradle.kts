@@ -35,18 +35,12 @@ repositories {
 dependencies {
 	minecraft("com.mojang:minecraft:${properties["minecraft_version"].toString()}")
 	mappings(loom.layered {
-		this.addLayer(quiltMappings.mappings("org.quiltmc:quilt-mappings:${properties["minecraft_version"].toString()}+build.${properties["quilt_mappings"].toString()}:v2"))
+//		this.addLayer(quiltMappings.mappings("org.quiltmc:quilt-mappings:${properties["minecraft_version"].toString()}+build.${properties["quilt_mappings"].toString()}:v2"))
 		officialMojangMappings()
 	})
 	modImplementation("net.fabricmc:fabric-loader:${properties["loader_version"].toString()}")
 
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${properties["fabric_version"].toString()}")
-
-	//TODO
-//	include(modImplementation("eu.pb4:polymer:${properties["polymer_version"].toString()}")!!)
-
-	//TODO use rayon
-	include(implementation("com.github.stephengold:Libbulletjme:15.2.1")!!)
 
 	include(implementation("org.joml:joml:${properties["joml_version"].toString()}")!!)
 
@@ -67,7 +61,7 @@ tasks {
 
 	withType<JavaCompile> {
 		options.release.set(17)
-		options.headerOutputDirectory.set(file("C:\\Users\\soren\\Documents\\Programming\\fabric-example-mod-1.19\\rust\\jni-headers"))
+		options.headerOutputDirectory.set(file("rust/jni-headers"))
 	}
 
 	jar {

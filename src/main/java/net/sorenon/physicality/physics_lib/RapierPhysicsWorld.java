@@ -1,7 +1,9 @@
-package net.sorenon.physicality.physv2;
+package net.sorenon.physicality.physics_lib;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.sorenon.physicality.physics_lib.jni.PhysJNI;
+import net.sorenon.physicality.physics_lib.jni.PhysicsCallback;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
