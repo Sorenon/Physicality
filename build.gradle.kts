@@ -35,7 +35,7 @@ repositories {
 dependencies {
 	minecraft("com.mojang:minecraft:${properties["minecraft_version"].toString()}")
 	mappings(loom.layered {
-//		this.addLayer(quiltMappings.mappings("org.quiltmc:quilt-mappings:${properties["minecraft_version"].toString()}+build.${properties["quilt_mappings"].toString()}:v2"))
+		this.addLayer(quiltMappings.mappings("org.quiltmc:quilt-mappings:${properties["minecraft_version"].toString()}+build.${properties["quilt_mappings"].toString()}:v2"))
 		officialMojangMappings()
 	})
 	modImplementation("net.fabricmc:fabric-loader:${properties["loader_version"].toString()}")

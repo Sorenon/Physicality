@@ -1,38 +1,61 @@
 package net.sorenon.physicality;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.sorenon.physicality.physics_lib.RapierPhysicsWorld;
+import net.sorenon.physicality.mixin.client.AgeableListModelAcc;
+import net.sorenon.physicality.mixin.client.LivingEntityRendererAcc;
+import net.sorenon.physicality.physics_lib.PhysicsWorld;
+import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class PhysicalityModClient implements ClientModInitializer {
 
     public static PhysicalityModClient INSTANCE;
 
-    public RapierPhysicsWorld rapierPhysicsWorld;
+    public PhysicsWorld physicsWorld;
 
     public HashSet<Debris> debrisList = new HashSet<>();
+
+    private KeyMapping key;
+
+    private List<RagdollPart> ragdollPartList = new ArrayList<>();
 
     @Override
     public void onInitializeClient() {
         INSTANCE = this;
 
+        key = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.examplemod.spook", // The translation key of the keybinding's name
+                InputConstants.Type.KEYSYM, // The type of the keybinding, KEYSYM for keyboard, MOUSE for mouse.
+                GLFW.GLFW_KEY_R, // The keycode of the key
+                "category.examplemod.test" // The translation key of the keybinding's category.
+        ));
+
         ClientTickEvents.START_WORLD_TICK.register(world -> {
-            if (this.rapierPhysicsWorld == null) {
-                this.rapierPhysicsWorld = new RapierPhysicsWorld(world);
+            if (this.physicsWorld == null) {
+                this.physicsWorld = new PhysicsWorld(world);
             }
 
             debrisList.removeIf(debris -> {
@@ -55,6 +78,83 @@ public class PhysicalityModClient implements ClientModInitializer {
             for (var debris : debrisList) {
                 debris.render(context.world(), context.matrixStack(), context.consumers());
             }
+
+            while (key.consumeClick()) {
+                var fakeCow = new Cow(EntityType.COW, context.world());
+                var entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+                var cowRenderer = entityRenderDispatcher.getRenderer(fakeCow);
+
+                if (cowRenderer instanceof LivingEntityRenderer livingRenderer) {
+                    var model = livingRenderer.getModel();
+
+                    var renderType = ((LivingEntityRendererAcc) livingRenderer).callGetRenderType(fakeCow, true, false, false);
+                    if (renderType != null) {
+                        if (model instanceof AgeableListModelAcc ageableListModel) {
+                            var bodyParts = ageableListModel.callBodyParts();
+                            for (var part : bodyParts) {
+                                this.ragdollPartList.add(new RagdollPart(part, renderType, this.physicsWorld));
+                            }
+                            bodyParts = ageableListModel.callHeadParts();
+                            for (var part : bodyParts) {
+                                this.ragdollPartList.add(new RagdollPart(part, renderType, this.physicsWorld));
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (var ragdollPart : this.ragdollPartList) {
+                ragdollPart.render(poses, context.consumers());
+            }
+
+//            poses.pushPose();
+//            poses.translate(10, 0, 10);
+
+            //Mojang????
+//            poses.scale(-1.0F, -1.0F, 1.0F);
+//            poses.translate(0.0, -1.501F, 0.0);
+//
+//            if (cowRenderer instanceof LivingEntityRenderer livingRenderer) {
+//                var model = livingRenderer.getModel();
+//
+//                var renderType = ((LivingEntityRendererAcc) livingRenderer).callGetRenderType(fakeCow, true, false, false);
+//                if (renderType != null) {
+//                    var vertexConsumer = context.consumers().getBuffer(renderType);
+//
+//                    if (model instanceof AgeableListModelAcc ageableListModel) {
+//                        var bodyParts = ageableListModel.callBodyParts();
+//                        for (var part : bodyParts) {
+//                            poses.pushPose();
+//                            var entityPart = new EntityPart(part);
+//                            var partPose = part.getInitialPose();
+//
+//                            poses.translate(partPose.x / 16, partPose.y / 16, partPose.z / 16);
+//                            poses.translate(entityPart.centerOffset.x, entityPart.centerOffset.y, entityPart.centerOffset.z);
+//
+//                            //Actual needed translation
+//                            poses.translate(-entityPart.centerOffset.x, -entityPart.centerOffset.y, -entityPart.centerOffset.z);
+//
+//                            if (partPose.zRot != 0.0F) {
+//                                poses.mulPose(Vector3f.ZP.rotation(partPose.zRot));
+//                            }
+//
+//                            if (partPose.yRot != 0.0F) {
+//                                poses.mulPose(Vector3f.YP.rotation(partPose.yRot));
+//                            }
+//
+//                            if (partPose.xRot != 0.0F) {
+//                                poses.mulPose(Vector3f.XP.rotation(partPose.xRot));
+//                            }
+//                            var partAcc = (ModelPartAcc) (Object) entityPart.modelPart;
+//                            var pose = poses.last();
+//                            partAcc.callCompile(pose, vertexConsumer, LightTexture.FULL_SKY, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+//                            poses.popPose();
+//                        }
+//                    }
+//                }
+//            }
+
+//            poses.popPose();
 
 //            for (var body : this.physicsWorld.physicsSpace.getRigidBodyList()) {
 //                var transform = body.getTransform(new Transform());
@@ -123,10 +223,10 @@ public class PhysicalityModClient implements ClientModInitializer {
             return;
         }
 
-        long bodyHandle = rapierPhysicsWorld.addBody(pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f);
-            var debris = new Debris(bodyHandle, 10000, state, pos);
+        long bodyHandle = physicsWorld.addBody(pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f);
+        var debris = new Debris(bodyHandle, 10000, state, pos);
 
-            this.debrisList.add(debris);
+        this.debrisList.add(debris);
 
 
         //        collisionShape.forAllBoxes((minX, minY, minZ, maxX, maxY, maxZ) -> {

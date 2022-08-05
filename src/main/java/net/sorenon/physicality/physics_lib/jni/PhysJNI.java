@@ -15,9 +15,27 @@ public class PhysJNI {
 
     public static native int addPhysicsBody(long physicsWorld, float x, float y, float z, long outPtr);
 
+    public static native int addCuboid(
+            long physicsWorld,
+            float x,
+            float y,
+            float z,
+            float ox,
+            float oy,
+            float oz,
+            float ow,
+            float ex,
+            float ey,
+            float ez,
+            long outPtr
+    );
+
     public static native int getBodyPosition(long physicsWorld, long bodyHandle, Vector3f position);
 
-    public static native int getBodyRenderTransform(long physicsWorld, long bodyHandle, Vector3f position, Quaternionf orientation);
+    public static native int getBodyRenderTransform(long physicsWorld,
+                                                    long bodyHandle,
+                                                    Vector3f position,
+                                                    Quaternionf orientation);
 
     public static native int blockUpdated(long physicalWorld, int x, int y, int z, long addr, long len);
 

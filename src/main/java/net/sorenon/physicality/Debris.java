@@ -34,7 +34,7 @@ public class Debris {
 //        var transform = this.rigidBody.getTransform(new Transform());
         var pos = new Vector3f(0, 0, 0);
         var orientation = new Quaternionf();
-        PhysicalityModClient.INSTANCE.rapierPhysicsWorld.getRenderTransform(this.rigidBody, pos, orientation);
+        PhysicalityModClient.INSTANCE.physicsWorld.getRenderTransform(this.rigidBody, pos, orientation);
 //        var rotation = transform.getRotation();
 
         poseStack.pushPose();

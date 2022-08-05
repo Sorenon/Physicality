@@ -12,14 +12,14 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.FloatBuffer;
 import java.util.HashSet;
 
-public class RapierPhysicsWorld implements PhysicsCallback {
+public class PhysicsWorld implements PhysicsCallback {
 
     private final long handle;
     private final Level level;
 
     private final HashSet<BlockPos> trackingBlocks = new HashSet<>();
 
-    public RapierPhysicsWorld(Level level) {
+    public PhysicsWorld(Level level) {
         this.level = level;
         this.handle = PhysJNI.createPhysicsWorld(level, this);
     }
@@ -39,6 +39,17 @@ public class RapierPhysicsWorld implements PhysicsCallback {
             return bodyHandle.get();
         }
     }
+
+    public long addCuboid(Vector3f pos, Quaternionf orientation, Vector3f size) {
+        try (var stack = MemoryStack.stackPush()) {
+            var bodyHandle = stack.callocLong(1);
+            if (PhysJNI.addCuboid(handle, pos.x, pos.y, pos.z, orientation.x, orientation.y, orientation.z, orientation.w, size.x, size.y, size.z, MemoryUtil.memAddress(bodyHandle)) < 0) {
+                throw new RuntimeException();
+            }
+            return bodyHandle.get();
+        }
+    }
+
 
     public void getBodyPosition(long bodyHandle, Vector3f position) {
         if (PhysJNI.getBodyPosition(handle, bodyHandle, position) < 0) {

@@ -198,6 +198,38 @@ impl PhysicsWorld {
         Ok(body.into_raw_parts())
     }
 
+    pub fn add_cuboid(
+        &mut self,
+        translation: Vector3<f32>,
+        orientation: UnitQuaternion<f32>,
+        extents: Vector3<f32>,
+    ) -> Result<(u32, u32), i32> {
+        let shape = ColliderBuilder::cuboid(extents.x, extents.y, extents.z).build();
+        let body = RigidBodyBuilder::dynamic()
+            .position(Isometry::from_parts(
+                Translation::from(translation),
+                orientation,
+            ))
+            .build();
+
+        let position = *body.position();
+
+        let body = self.rapier.rigid_body_set.insert(body);
+        self.rapier
+            .collider_set
+            .insert_with_parent(shape, body, &mut self.rapier.rigid_body_set);
+
+        let index = body.into_raw_parts().0 as usize;
+        if index >= self.old_positions.len() {
+            self.old_positions
+                .resize(index as usize + 1, Isometry3::identity());
+        }
+
+        *self.old_positions.get_mut(index).unwrap() = position;
+
+        Ok(body.into_raw_parts())
+    }
+
     pub fn get_body_translation(&mut self, body: (u32, u32)) -> Result<Vector3<f32>, i32> {
         match self
             .rapier

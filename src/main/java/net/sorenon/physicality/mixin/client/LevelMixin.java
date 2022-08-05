@@ -18,8 +18,8 @@ public class LevelMixin {
 
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z", at = @At("RETURN"))
     void onSetBlock(BlockPos pos, BlockState state, int flags, int maxUpdateDepth, CallbackInfoReturnable<Boolean> cir) {
-        if (this.isClientSide && cir.getReturnValue() && PhysicalityModClient.INSTANCE.rapierPhysicsWorld != null) {
-            PhysicalityModClient.INSTANCE.rapierPhysicsWorld.setBlockDirty(pos);
+        if (this.isClientSide && cir.getReturnValue() && PhysicalityModClient.INSTANCE.physicsWorld != null) {
+            PhysicalityModClient.INSTANCE.physicsWorld.setBlockDirty(pos);
         }
     }
 }

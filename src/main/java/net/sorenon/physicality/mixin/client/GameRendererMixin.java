@@ -26,7 +26,7 @@ public abstract class GameRendererMixin {
         long newTime = System.currentTimeMillis();
 
         if (tick && this.minecraft.level != null && !this.getMinecraft().isPaused()) {
-            PhysicalityModClient.INSTANCE.rapierPhysicsWorld.step((newTime - time) / 1000f);
+            PhysicalityModClient.INSTANCE.physicsWorld.step((newTime - time) / 1000f);
         }
 
         this.time = newTime;
