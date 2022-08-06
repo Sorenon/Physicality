@@ -34,10 +34,10 @@ JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_add
 /*
  * Class:     net_sorenon_physicality_physics_lib_jni_PhysJNI
  * Method:    addCuboid
- * Signature: (JFFFFFFFFFFJ)I
+ * Signature: (JFFFFFFFJIJ)I
  */
 JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_addCuboid
-  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jlong);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jlong, jint, jlong);
 
 /*
  * Class:     net_sorenon_physicality_physics_lib_jni_PhysJNI

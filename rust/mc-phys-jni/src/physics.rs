@@ -198,13 +198,12 @@ impl PhysicsWorld {
         Ok(body.into_raw_parts())
     }
 
-    pub fn add_cuboid(
+    pub fn add_cuboids(
         &mut self,
         translation: Vector3<f32>,
         orientation: UnitQuaternion<f32>,
-        extents: Vector3<f32>,
+        shapes: &[(Vector3<f32>, Vector3<f32>)],
     ) -> Result<(u32, u32), i32> {
-        let shape = ColliderBuilder::cuboid(extents.x, extents.y, extents.z).build();
         let body = RigidBodyBuilder::dynamic()
             .position(Isometry::from_parts(
                 Translation::from(translation),
@@ -215,9 +214,31 @@ impl PhysicsWorld {
         let position = *body.position();
 
         let body = self.rapier.rigid_body_set.insert(body);
-        self.rapier
-            .collider_set
-            .insert_with_parent(shape, body, &mut self.rapier.rigid_body_set);
+
+        if shapes.len() == 1 {
+            let extents = &shapes[0].0;
+            debug_assert_eq!(shapes[0].1, Vector3::new(0., 0., 0.));
+            println!("size {:?}", extents);
+            let shape = ColliderBuilder::cuboid(extents.x, extents.y, extents.z).build();
+
+            self.rapier.collider_set.insert_with_parent(
+                shape,
+                body,
+                &mut self.rapier.rigid_body_set,
+            );
+        } else {
+            for (extents, pos) in shapes {
+                let shape = ColliderBuilder::cuboid(extents.x, extents.y, extents.z)
+                    .translation(*pos)
+                    .build();
+
+                self.rapier.collider_set.insert_with_parent(
+                    shape,
+                    body,
+                    &mut self.rapier.rigid_body_set,
+                );
+            }
+        };
 
         let index = body.into_raw_parts().0 as usize;
         if index >= self.old_positions.len() {

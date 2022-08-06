@@ -11,7 +11,7 @@ use jni::objects::{JClass, JObject};
 // can't return one of the objects with lifetime information because the
 // lifetime checker won't let us.
 use jni::sys::{jfloat, jint, jlong};
-use rapier3d::na::{Quaternion, UnitQuaternion, Vector3};
+use rapier3d::na::{Quaternion, UnitQuaternion, Vector3, Vector4};
 use std::cell::RefCell;
 use thunderdome::{Arena, Index};
 
@@ -253,12 +253,16 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_Phys
     oy: jfloat,
     oz: jfloat,
     ow: jfloat,
-    ex: jfloat,
-    ey: jfloat,
-    ez: jfloat,
+    shapes: jlong,
+    shapes_len: jint,
     out: jlong,
 ) -> jint {
     let out = out as usize as *mut u64;
+
+    let shapes = std::slice::from_raw_parts(
+        shapes as *const (Vector3<f32>, Vector3<f32>),
+        shapes_len as usize,
+    );
 
     PHYSICS_WORLDS.with(|worlds| {
         let mut worlds = worlds.borrow_mut();
@@ -266,10 +270,10 @@ pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_Phys
         let physics_world = worlds.get_mut(index).unwrap();
 
         let pos = Vector3::new(x, y, z);
-        let orientation = UnitQuaternion::new_normalize(Quaternion::new(ox, oy, oz, ow));
-        let size = Vector3::new(ex, ey, ez);
+        let orientation =
+            UnitQuaternion::new_normalize(Quaternion::from_vector(Vector4::new(ox, oy, oz, ow)));
 
-        match physics_world.add_cuboid(pos, orientation, size) {
+        match physics_world.add_cuboids(pos, orientation, &shapes) {
             Ok(res) => {
                 *out = std::mem::transmute(res);
                 0

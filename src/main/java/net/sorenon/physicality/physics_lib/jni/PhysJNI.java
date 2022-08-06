@@ -24,9 +24,8 @@ public class PhysJNI {
             float oy,
             float oz,
             float ow,
-            float ex,
-            float ey,
-            float ez,
+            long shapes_addr,
+            int shapes_num,
             long outPtr
     );
 

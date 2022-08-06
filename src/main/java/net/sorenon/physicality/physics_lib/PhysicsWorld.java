@@ -8,9 +8,11 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import oshi.util.tuples.Pair;
 
 import java.nio.FloatBuffer;
 import java.util.HashSet;
+import java.util.List;
 
 public class PhysicsWorld implements PhysicsCallback {
 
@@ -40,10 +42,20 @@ public class PhysicsWorld implements PhysicsCallback {
         }
     }
 
-    public long addCuboid(Vector3f pos, Quaternionf orientation, Vector3f size) {
+    public long addCuboid(Vector3f pos, Quaternionf orientation, List<Pair<Vector3f, Vector3f>> shapes) {
         try (var stack = MemoryStack.stackPush()) {
             var bodyHandle = stack.callocLong(1);
-            if (PhysJNI.addCuboid(handle, pos.x, pos.y, pos.z, orientation.x, orientation.y, orientation.z, orientation.w, size.x, size.y, size.z, MemoryUtil.memAddress(bodyHandle)) < 0) {
+            var shapesBuffer = stack.mallocFloat(shapes.size() * 6);
+            for (var part : shapes) {
+                shapesBuffer.put(part.getA().x);
+                shapesBuffer.put(part.getA().y);
+                shapesBuffer.put(part.getA().z);
+                shapesBuffer.put(part.getB().z);
+                shapesBuffer.put(part.getB().z);
+                shapesBuffer.put(part.getB().z);
+            }
+
+            if (PhysJNI.addCuboid(handle, pos.x, pos.y, pos.z, orientation.x, orientation.y, orientation.z, orientation.w, MemoryUtil.memAddress0(shapesBuffer), shapes.size(), MemoryUtil.memAddress(bodyHandle)) < 0) {
                 throw new RuntimeException();
             }
             return bodyHandle.get();
