@@ -23,7 +23,7 @@
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "physicality.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.14.6",

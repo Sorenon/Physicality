@@ -59,7 +59,7 @@ public class RagdollPart {
         System.out.println("rot " + this.orientation);
 
         var cubes = new ArrayList<Pair<Vector3f, Vector3f>>();
-        entityPart.calculateCubes(cubes);
+        entityPart.calculateCubes(cubes, orientation);
 
         this.body = physicsWorld.addCuboid(translation, orientation, cubes);
         this.physicsWorld = physicsWorld;

@@ -1,6 +1,7 @@
 package net.sorenon.physicality;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -23,9 +24,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.sorenon.physicality.mixin.client.AgeableListModelAcc;
 import net.sorenon.physicality.mixin.client.LivingEntityRendererAcc;
+import net.sorenon.physicality.physics_lib.DebugRenderer;
 import net.sorenon.physicality.physics_lib.PhysicsWorld;
+import net.sorenon.physicality.physics_lib.jni.PhysJNI;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryUtil;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -46,11 +51,12 @@ public class PhysicalityModClient implements ClientModInitializer {
     public void onInitializeClient() {
         INSTANCE = this;
 
+
         key = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-                "key.examplemod.spook", // The translation key of the keybinding's name
+                "key.physicality.ragdoll", // The translation key of the keybinding's name
                 InputConstants.Type.KEYSYM, // The type of the keybinding, KEYSYM for keyboard, MOUSE for mouse.
                 GLFW.GLFW_KEY_R, // The keycode of the key
-                "category.examplemod.test" // The translation key of the keybinding's category.
+                "category.physicality.test" // The translation key of the keybinding's category.
         ));
 
         ClientTickEvents.START_WORLD_TICK.register(world -> {
@@ -68,6 +74,8 @@ public class PhysicalityModClient implements ClientModInitializer {
                 return false;
             });
         });
+
+        var debugRenderer = new DebugRenderer();
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             var poses = context.matrixStack();
@@ -105,6 +113,10 @@ public class PhysicalityModClient implements ClientModInitializer {
 
             for (var ragdollPart : this.ragdollPartList) {
                 ragdollPart.render(poses, context.consumers());
+            }
+
+            if (this.physicsWorld != null) {
+                debugRenderer.render(this.physicsWorld, poses.last(), context.consumers());
             }
 
 //            poses.pushPose();

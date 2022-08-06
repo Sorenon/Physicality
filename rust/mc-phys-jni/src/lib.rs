@@ -1,3 +1,4 @@
+use glow::Context;
 // This is the interface to the JVM that we'll call the majority of our
 // methods on.
 use jni::JNIEnv;
@@ -5,14 +6,19 @@ use jni::JNIEnv;
 // These objects are what you should use as arguments to your native
 // function. They carry extra lifetime information to prevent them escaping
 // this context and getting used after being GC'd.
-use jni::objects::{JClass, JObject};
+use jni::objects::{JClass, JObject, JValue};
 
 // This is just a pointer. We'll be returning it from our function. We
 // can't return one of the objects with lifetime information because the
 // lifetime checker won't let us.
 use jni::sys::{jfloat, jint, jlong};
-use rapier3d::na::{Quaternion, UnitQuaternion, Vector3, Vector4};
+use once_cell::sync::OnceCell;
+use parking_lot::Mutex;
+use rapier3d::na::{Matrix4, Quaternion, UnitQuaternion, Vector3, Vector4};
+use rapier3d::prelude::{DebugRenderBackend, DebugRenderPipeline};
 use std::cell::RefCell;
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 use thunderdome::{Arena, Index};
 
 use physics::{make_block_colliders, Callback, CallbackContext, PhysicsWorld, FFI_AABB};
@@ -21,6 +27,86 @@ mod physics;
 
 thread_local! {
     static PHYSICS_WORLDS: RefCell<Arena<PhysicsWorld>> = RefCell::new(Arena::new());
+}
+
+// static RENDERER: OnceCell<Mutex<Renderer>> = OnceCell::new();
+
+// #[no_mangle]
+// pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_initializeDebugRenderer(
+//     env: JNIEnv,
+//     _class: JClass,
+//     glfw_get_proc_address_ptr: jlong,
+// ) -> jint {
+//     RENDERER.get_or_init(|| {
+//         type GlfwGetProcAddress = unsafe extern "C" fn(*const c_char) -> *const c_char;
+
+//         let glfw_get_proc_address: GlfwGetProcAddress =
+//             std::mem::transmute(glfw_get_proc_address_ptr);
+
+//         Mutex::new(Renderer::new(Context::from_loader_function(|name| {
+//             let cstr = CString::new(name).unwrap();
+//             glfw_get_proc_address(cstr.as_ptr() as _) as _
+//         })))
+//     });
+
+//     0
+// }
+
+#[no_mangle]
+pub unsafe extern "system" fn Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_debugRender(
+    env: JNIEnv,
+    _class: JClass,
+    physics_world: jlong,
+    callback: JObject,
+) -> jint {
+    PHYSICS_WORLDS.with(|worlds| {
+        let mut worlds = worlds.borrow_mut();
+        let index = Index::from_bits(physics_world as _).unwrap();
+        let physics_world = worlds.get_mut(index).unwrap();
+        let rapier = &physics_world.rapier;
+        let mut backend = Backend { callback, env };
+
+        DebugRenderPipeline::default().render(
+            &mut backend,
+            &rapier.rigid_body_set,
+            &rapier.collider_set,
+            &rapier.impulse_joint_set,
+            &rapier.multibody_joint_set,
+            &rapier.narrow_phase,
+        )
+    });
+
+    0
+}
+
+struct Backend<'a> {
+    env: JNIEnv<'a>,
+    callback: JObject<'a>,
+}
+
+impl<'a> DebugRenderBackend for Backend<'a> {
+    fn draw_line(
+        &mut self,
+        _: rapier3d::prelude::DebugRenderObject,
+        a: rapier3d::prelude::Point<rapier3d::prelude::Real>,
+        b: rapier3d::prelude::Point<rapier3d::prelude::Real>,
+        color: [f32; 4],
+    ) {
+        self.env
+            .call_method(self.callback, "renderLine", "(FFFFFFFFFF)V", &[
+                JValue::Float(a.x),
+                JValue::Float(a.y),
+                JValue::Float(a.z),
+                JValue::Float(b.x),
+                JValue::Float(b.y),
+                JValue::Float(b.z),
+                JValue::Float(color[0]),
+                JValue::Float(color[1]),
+                JValue::Float(color[2]),
+                JValue::Float(color[3]),
+            ])
+            .unwrap();
+    }
 }
 
 #[no_mangle]

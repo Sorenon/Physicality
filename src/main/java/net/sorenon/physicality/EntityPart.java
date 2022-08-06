@@ -2,6 +2,7 @@ package net.sorenon.physicality;
 
 import net.minecraft.client.model.geom.ModelPart;
 import net.sorenon.physicality.mixin.client.ModelPartAcc;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import oshi.util.tuples.Pair;
 
@@ -47,7 +48,7 @@ public class EntityPart {
         out.div(16);
     }
 
-    public void calculateCubes(ArrayList<Pair<Vector3f, Vector3f>> cubesOut) {
+    public void calculateCubes(ArrayList<Pair<Vector3f, Vector3f>> cubesOut, Quaternionf orientation) {
         var cubes = ((ModelPartAcc) (Object) modelPart).getCubes();
         if (cubes.size() == 1) {
             var cube = cubes.get(0);
@@ -77,6 +78,7 @@ public class EntityPart {
             );
             pos.div(16);
             pos.sub(this.centerOffset);
+            orientation.transform(pos);
 
             cubesOut.add(new Pair<>(size, pos));
         }

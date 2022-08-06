@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     net_sorenon_physicality_physics_lib_jni_PhysJNI
+ * Method:    debugRender
+ * Signature: (JLnet/sorenon/physicality/physics_lib/jni/DebugRenderCallback;)I
+ */
+JNIEXPORT jint JNICALL Java_net_sorenon_physicality_physics_1lib_jni_PhysJNI_debugRender
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     net_sorenon_physicality_physics_lib_jni_PhysJNI
  * Method:    createPhysicsWorld
  * Signature: (Lnet/minecraft/world/level/Level;Lnet/sorenon/physicality/physics_lib/jni/PhysicsCallback;)J
  */

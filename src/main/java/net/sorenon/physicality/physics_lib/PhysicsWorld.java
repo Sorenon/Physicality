@@ -16,7 +16,7 @@ import java.util.List;
 
 public class PhysicsWorld implements PhysicsCallback {
 
-    private final long handle;
+    public final long handle;
     private final Level level;
 
     private final HashSet<BlockPos> trackingBlocks = new HashSet<>();

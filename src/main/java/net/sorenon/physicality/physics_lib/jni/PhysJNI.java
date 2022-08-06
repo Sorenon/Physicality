@@ -9,6 +9,10 @@ public class PhysJNI {
         NativeLoader.load();
     }
 
+//    public static native int initializeDebugRenderer(long glfwGetProcAddress);
+//
+    public static native int debugRender(long physicsWorld, DebugRenderCallback debugRenderCallback);
+
     public static native long createPhysicsWorld(Level level, PhysicsCallback callback);
 
     public static native int step(long physicsWorld, float deltaTime);
