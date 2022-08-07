@@ -71,8 +71,8 @@ public class RagdollPart {
         physicsWorld.getRenderTransform(this.body, this.translation, this.orientation);
 
         poses.translate(this.translation.x, this.translation.y, this.translation.z);
-
         poses.mulPose(new Quaternion(this.orientation.x, this.orientation.y, this.orientation.z, this.orientation.w));
+
         poses.translate(-this.entityPart.centerOffset.x, -this.entityPart.centerOffset.y, -this.entityPart.centerOffset.z);
 
 

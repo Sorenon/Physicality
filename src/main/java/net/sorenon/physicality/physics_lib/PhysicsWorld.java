@@ -50,8 +50,8 @@ public class PhysicsWorld implements PhysicsCallback {
                 shapesBuffer.put(part.getA().x);
                 shapesBuffer.put(part.getA().y);
                 shapesBuffer.put(part.getA().z);
-                shapesBuffer.put(part.getB().z);
-                shapesBuffer.put(part.getB().z);
+                shapesBuffer.put(part.getB().x);
+                shapesBuffer.put(part.getB().y);
                 shapesBuffer.put(part.getB().z);
             }
 

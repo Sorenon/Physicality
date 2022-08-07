@@ -60,7 +60,9 @@ public class EntityPart {
                     ((cube.maxZ - cube.minZ) / 2)
             );
             sizeOut.div(16);
+
             cubesOut.add(new Pair<>(sizeOut, new Vector3f()));
+            return;
         }
 
         for (var cube : cubes) {
@@ -69,16 +71,15 @@ public class EntityPart {
                     ((cube.maxY - cube.minY) / 2),
                     ((cube.maxZ - cube.minZ) / 2)
             );
-            size.div(16);
 
             var pos = new Vector3f(
-                    +cube.minX + ((cube.maxX - cube.minX) / 2),
-                    +cube.minY + ((cube.maxY - cube.minY) / 2),
-                    +cube.minZ + ((cube.maxZ - cube.minZ) / 2)
+                    +cube.minX + size.x,
+                    +cube.minY + size.y,
+                    +cube.minZ + size.z
             );
+            size.div(16);
             pos.div(16);
             pos.sub(this.centerOffset);
-            orientation.transform(pos);
 
             cubesOut.add(new Pair<>(size, pos));
         }
